@@ -116,6 +116,12 @@
   .pronto{display:none;text-align:center;padding:20px 0 4px}
   .pronto.on{display:block}
   .coroa{display:block;width:38px;margin:0 auto 10px}
+  .agenda{margin:22px auto 0;max-width:320px}
+  .agenda-titulo{margin:0 0 8px;font-family:Anton,sans-serif;font-size:16px;color:var(--mata);letter-spacing:.02em}
+  .agenda a{display:block;margin-top:8px;padding:12px;border-radius:11px;border:2px solid var(--folha);
+    color:var(--mata);background:rgba(255,255,255,.75);font-weight:800;text-decoration:none;font-size:16px}
+  .agenda a:hover{background:#fff}
+  .senha{width:100%;max-width:280px;margin:0 0 12px;padding:12px 14px;font:inherit;border:2px solid var(--linha);border-radius:10px}
   .zap{display:inline-block;margin-top:18px;background:var(--folha);color:#fff;font-weight:800;text-decoration:none;padding:13px 22px;border-radius:12px}
 
   footer{text-align:center;color:#6B5340;font-size:14px;margin-top:30px;padding-top:16px;border-top:3px dotted var(--linha)}
@@ -250,6 +256,11 @@
       <h2 id="pronto-titulo">PRESENÇA CONFIRMADA</h2>
       <p id="pronto-texto"></p>
       <a class="zap" id="zap" href="#" target="_blank" rel="noopener">Avisar no WhatsApp</a>
+      <div class="agenda" id="agenda">
+        <p class="agenda-titulo">Guarde a data</p>
+        <a id="gcal" href="#" target="_blank" rel="noopener">Google Agenda</a>
+        <a id="ical" href="#" download="aniversario-do-ravi.ics">Calendário do celular</a>
+      </div>
     </section>
 
     <footer>
@@ -266,6 +277,12 @@
     <div class="total"><b id="t-criancas">0</b> crianças 3–10</div>
     <div class="total"><b id="t-bebes">0</b> até 2 anos</div>
   </div>
+  <div id="entrada">
+    <p class="ajuda">Digite a senha do anfitrião para ver quem confirmou.</p>
+    <input class="senha" id="senha" type="password" placeholder="senha" autocomplete="off">
+    <p><button type="button" id="entrar">Ver a lista</button></p>
+    <p class="erro" id="erro-lista" hidden></p>
+  </div>
   <ul class="lista" id="lista"></ul>
   <p><button type="button" id="fechar">Voltar ao convite</button></p>
   <p class="ajuda">As respostas ficam salvas neste link e podem ser vistas por quem abrir a área do anfitrião.</p>
@@ -273,10 +290,10 @@
 
 <script>
 (function(){
+  var API  = "https://dzysyujkefksduusnkpb.supabase.co/rest/v1";
+  var KEY  = "sb_publishable_foVjR4L0DXOt7c2k5-8JWw_dgZpTWu8";
   var contagem = {adultos:1, criancas:0, bebes:0};
   var LIMITE = 12;
-  var memoria = {};
-  var temStorage = typeof window.storage !== "undefined";
 
   function pinta(k){
     document.getElementById(k).textContent = contagem[k];
@@ -293,38 +310,56 @@
     if(menos){ contagem[menos] = Math.max(menos==="adultos"?1:0, contagem[menos]-1); pinta(menos); }
   });
 
-  async function salvar(reg){
-    var chave = "rsvp:" + Date.now() + Math.floor(Math.random()*1000);
-    memoria[chave] = reg;
-    if(!temStorage) return false;
-    try{ return !!(await window.storage.set(chave, JSON.stringify(reg), true)); }
-    catch(err){ return false; }
-  }
-
-  async function carregar(){
-    var itens = [];
-    if(temStorage){
-      try{
-        var res = await window.storage.list("rsvp:", true);
-        var chaves = (res && res.keys) || [];
-        for(var i=0;i<chaves.length;i++){
-          try{
-            var v = await window.storage.get(chaves[i], true);
-            if(v && v.value) itens.push(JSON.parse(v.value));
-          }catch(e){}
-        }
-      }catch(e){}
-    }
-    if(!itens.length) itens = Object.keys(memoria).map(function(k){return memoria[k];});
-    return itens;
-  }
-
   function texto(reg){
     var p = [];
     if(reg.adultos) p.push(reg.adultos + (reg.adultos>1?" adultos":" adulto"));
-    if(reg.criancas) p.push(reg.criancas + (reg.criancas>1?" crianças de 3 a 10":" criança de 3 a 10"));
-    if(reg.bebes) p.push(reg.bebes + (reg.bebes>1?" bebês":" bebê"));
+    if(reg.criancas) p.push(reg.criancas + (reg.criancas>1?" crian\u00e7as de 3 a 10":" crian\u00e7a de 3 a 10"));
+    if(reg.bebes) p.push(reg.bebes + (reg.bebes>1?" beb\u00eas":" beb\u00ea"));
     return p.join(", ");
+  }
+
+  async function salvar(reg){
+    var r = await fetch(API + "/confirmacoes_ravi", {
+      method: "POST",
+      headers: {
+        "apikey": KEY,
+        "Authorization": "Bearer " + KEY,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(reg)
+    });
+    if(!r.ok) throw new Error("falha ao salvar");
+  }
+
+  // ---- guardar a data ----
+  var EVT = {
+    titulo: "Anivers\u00e1rio do Ravi \u2014 1 ano",
+    local: "Lupalu Play Park, R. Jos\u00e9 Hauer, 1778c - Boqueir\u00e3o, Curitiba - PR, 81730-400",
+    inicio: "20261012T173000Z",
+    fim:    "20261012T213000Z",
+    nota:   "Segunda-feira, 12 de outubro, \u00e0s 14h30. Confirma\u00e7\u00f5es: https://ravi-1ano.vercel.app/"
+  };
+  function montaAgenda(){
+    document.getElementById("gcal").href =
+      "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+      "&text=" + encodeURIComponent(EVT.titulo) +
+      "&dates=" + EVT.inicio + "/" + EVT.fim +
+      "&details=" + encodeURIComponent(EVT.nota) +
+      "&location=" + encodeURIComponent(EVT.local);
+    var ics = [
+      "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Convite Ravi//PT-BR","CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT","UID:ravi-1ano@ravi-1ano.vercel.app",
+      "DTSTAMP:" + EVT.inicio,
+      "DTSTART:" + EVT.inicio,
+      "DTEND:" + EVT.fim,
+      "SUMMARY:" + EVT.titulo,
+      "LOCATION:" + EVT.local.replace(/,/g, "\\,"),
+      "DESCRIPTION:" + EVT.nota.replace(/,/g, "\\,"),
+      "BEGIN:VALARM","TRIGGER:-P1D","ACTION:DISPLAY","DESCRIPTION:Anivers\u00e1rio do Ravi amanh\u00e3","END:VALARM",
+      "END:VEVENT","END:VCALENDAR"
+    ].join("\r\n");
+    document.getElementById("ical").href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
   }
 
   async function envia(vai){
@@ -337,61 +372,93 @@
       return;
     }
     erro.hidden = true;
-    document.getElementById("enviar").disabled = true;
+    var botao = document.getElementById("enviar");
+    botao.disabled = true;
+    botao.textContent = "ENVIANDO...";
 
     var reg = {
       nome: nome,
-      fone: document.getElementById("fone").value.trim(),
-      recado: document.getElementById("recado").value.trim(),
+      fone: document.getElementById("fone").value.trim() || null,
+      recado: document.getElementById("recado").value.trim() || null,
       adultos: vai ? contagem.adultos : 0,
       criancas: vai ? contagem.criancas : 0,
       bebes: vai ? contagem.bebes : 0,
-      vai: vai,
-      quando: new Date().toISOString()
+      vai: vai
     };
-    await salvar(reg);
+
+    try{
+      await salvar(reg);
+    }catch(e){
+      botao.disabled = false;
+      botao.textContent = "CONFIRMAR PRESEN\u00c7A";
+      erro.textContent = "N\u00e3o consegui enviar. Confira a internet e tente de novo.";
+      erro.hidden = false;
+      return;
+    }
 
     var msg = vai
-      ? "Oi! Confirmando presença no aniversário do Ravi: " + texto(reg) + ". — " + nome
-      : "Oi! Infelizmente não vou conseguir ir no aniversário do Ravi. — " + nome;
+      ? "Oi! Confirmando presen\u00e7a no anivers\u00e1rio do Ravi: " + texto(reg) + ". \u2014 " + nome
+      : "Oi! Infelizmente n\u00e3o vou conseguir ir no anivers\u00e1rio do Ravi. \u2014 " + nome;
 
     document.getElementById("form").style.display = "none";
     document.getElementById("pronto").classList.add("on");
-    document.getElementById("pronto-titulo").textContent = vai ? "PRESENÇA CONFIRMADA" : "RESPOSTA ENVIADA";
+    document.getElementById("pronto-titulo").textContent = vai ? "PRESEN\u00c7A CONFIRMADA" : "RESPOSTA ENVIADA";
     document.getElementById("pronto-texto").textContent = vai
-      ? "Anotado: " + texto(reg) + ". Te esperamos segunda, 12 de outubro, às 14h30, no Lupalu Play Park."
-      : "Que pena! Obrigado por avisar — vamos guardar um pedaço de bolo.";
+      ? "Anotado: " + texto(reg) + ". Te esperamos segunda, 12 de outubro, \u00e0s 14h30, no Lupalu Play Park."
+      : "Que pena! Obrigado por avisar \u2014 vamos guardar um peda\u00e7o de bolo.";
     document.getElementById("zap").href = "https://wa.me/?text=" + encodeURIComponent(msg);
+    if(vai){ montaAgenda(); } else { document.getElementById("agenda").style.display = "none"; }
     document.getElementById("pronto").scrollIntoView({behavior:"smooth", block:"center"});
   }
 
   document.getElementById("form").addEventListener("submit", function(e){ e.preventDefault(); envia(true); });
   document.getElementById("recusar").addEventListener("click", function(){ envia(false); });
 
+  // ---- \u00e1rea do anfitri\u00e3o ----
   var toques = 0;
   document.getElementById("chave").addEventListener("click", function(){ if(++toques >= 5) abrePainel(); });
   if(location.search.indexOf("lista") > -1) abrePainel();
 
   function esc(s){ return String(s).replace(/[<>&"]/g, function(c){ return {"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]; }); }
 
-  async function abrePainel(){
-    var itens = await carregar();
-    itens.sort(function(a,b){ return a.quando < b.quando ? 1 : -1; });
+  function abrePainel(){
+    document.getElementById("quadro").style.display = "none";
+    document.getElementById("painel").classList.add("on");
+    window.scrollTo(0,0);
+    document.getElementById("senha").focus();
+  }
+
+  async function carregaLista(){
+    var senha = document.getElementById("senha").value;
+    var aviso = document.getElementById("erro-lista");
+    aviso.hidden = true;
+    var r = await fetch(API + "/rpc/lista_ravi", {
+      method: "POST",
+      headers: {"apikey": KEY, "Authorization": "Bearer " + KEY, "Content-Type": "application/json"},
+      body: JSON.stringify({senha: senha})
+    });
+    if(!r.ok){
+      aviso.textContent = "Senha incorreta.";
+      aviso.hidden = false;
+      return;
+    }
+    var itens = await r.json();
     var ta=0, tc=0, tb=0, html="";
-    itens.forEach(function(r){
-      ta+=r.adultos||0; tc+=r.criancas||0; tb+=r.bebes||0;
-      var linha = r.vai ? texto(r) : "não vai";
-      html += '<li class="'+(r.vai?"":"nao")+'"><strong>'+esc(r.nome)+'</strong><span>'+esc(linha)+
-              (r.fone?" &middot; "+esc(r.fone):"")+'</span>'+(r.recado?'<span>&ldquo;'+esc(r.recado)+'&rdquo;</span>':"")+'</li>';
+    itens.forEach(function(reg){
+      ta+=reg.adultos||0; tc+=reg.criancas||0; tb+=reg.bebes||0;
+      var linha = reg.vai ? texto(reg) : "n\u00e3o vai";
+      html += '<li class="'+(reg.vai?"":"nao")+'"><strong>'+esc(reg.nome)+'</strong><span>'+esc(linha)+
+              (reg.fone?" &middot; "+esc(reg.fone):"")+'</span>'+
+              (reg.recado?'<span>&ldquo;'+esc(reg.recado)+'&rdquo;</span>':"")+'</li>';
     });
     document.getElementById("t-adultos").textContent = ta;
     document.getElementById("t-criancas").textContent = tc;
     document.getElementById("t-bebes").textContent = tb;
-    document.getElementById("lista").innerHTML = html || '<li>Ninguém respondeu ainda. Assim que chegar a primeira confirmação ela aparece aqui.</li>';
-    document.getElementById("quadro").style.display = "none";
-    document.getElementById("painel").classList.add("on");
-    window.scrollTo(0,0);
+    document.getElementById("lista").innerHTML = html || '<li>Ningu\u00e9m respondeu ainda.</li>';
+    document.getElementById("entrada").style.display = "none";
   }
+  document.getElementById("entrar").addEventListener("click", carregaLista);
+  document.getElementById("senha").addEventListener("keydown", function(e){ if(e.key === "Enter") carregaLista(); });
 
   try{
     if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches){
