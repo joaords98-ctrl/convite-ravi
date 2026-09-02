@@ -291,6 +291,8 @@
   var KEY  = "sb_publishable_foVjR4L0DXOt7c2k5-8JWw_dgZpTWu8";
   var contagem = {adultos:1, criancas:0, bebes:0};
   var LIMITE = 12;
+  var ZAP = "5541997737195";                 // WhatsApp que recebe os avisos
+  var PLANILHA = "";                         // cole aqui a URL do Apps Script
 
   function pinta(k){
     document.getElementById(k).textContent = contagem[k];
@@ -327,6 +329,13 @@
       body: JSON.stringify(reg)
     });
     if(!r.ok) throw new Error("falha ao salvar");
+  }
+
+  function mandaPlanilha(reg){
+    if(!PLANILHA) return;
+    var f = new FormData();
+    Object.keys(reg).forEach(function(k){ f.append(k, reg[k]); });
+    fetch(PLANILHA, {method:"POST", mode:"no-cors", body:f}).catch(function(){});
   }
 
   // ---- guardar a data ----
@@ -385,6 +394,7 @@
 
     try{
       await salvar(reg);
+      mandaPlanilha(reg);
     }catch(e){
       botao.disabled = false;
       botao.textContent = "CONFIRMAR PRESEN\u00c7A";
@@ -403,7 +413,7 @@
     document.getElementById("pronto-texto").textContent = vai
       ? "Anotado: " + texto(reg) + ". Te esperamos segunda, 12 de outubro, \u00e0s 14h30, no Lupalu Play Park."
       : "Que pena! Obrigado por avisar \u2014 vamos guardar um peda\u00e7o de bolo.";
-    document.getElementById("zap").href = "https://wa.me/?text=" + encodeURIComponent(msg);
+    document.getElementById("zap").href = "https://wa.me/" + ZAP + "?text=" + encodeURIComponent(msg);
     if(vai){ montaAgenda(); } else { document.getElementById("agenda").style.display = "none"; }
     document.getElementById("pronto").scrollIntoView({behavior:"smooth", block:"center"});
   }
