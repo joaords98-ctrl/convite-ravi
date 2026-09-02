@@ -7,3 +7,7 @@ segunda-feira, 12 de outubro, às 14h30, no Lupalu Play Park (Curitiba/PR).
 - `fundo.mp4` — vídeo de fundo comprimido, caso queira reaproveitar
 
 Área do anfitrião: cinco toques na coroa do rodapé, ou `?lista` no fim do endereço.
+
+## Créditos
+
+Trilha: "Jungle Mission" — FreePD.com, domínio público (CC0). Uso livre, sem atribuição obrigatória.

@@ -71,6 +71,12 @@
   .rei em{font-style:normal;color:var(--barro)}
   .intro{margin:12px 0 0;max-width:44ch}
 
+  .som{position:fixed;right:14px;bottom:14px;z-index:5;display:flex;align-items:center;gap:8px;
+    font-family:Anton,sans-serif;font-size:15px;letter-spacing:.02em;color:#F3E7C4;
+    background:rgba(34,57,31,.9);border:2px solid var(--musgo);border-radius:999px;
+    padding:10px 16px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+  .som:hover{background:var(--folha)}
+  .som svg{width:18px;height:18px;fill:#F3E7C4}
   .chegar{display:block;margin:14px 0 0;text-align:center;font-family:Anton,sans-serif;font-size:18px;letter-spacing:.02em;color:#fff;background:var(--folha);text-decoration:none;padding:14px;border-radius:12px;box-shadow:0 5px 0 #2C4C1D}
   .chegar:hover{background:var(--mata)}
   .placa{position:relative;margin:26px 0 0;color:#33200E}
@@ -144,6 +150,13 @@
 <div class="fundo" aria-hidden="true">
   <video id="video" autoplay muted loop playsinline preload="auto" src="fundo.mp4"></video>
 </div>
+
+<audio id="som" src="musica.mp3" loop preload="none"></audio>
+<button class="som" id="botao-som" type="button" aria-pressed="false">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path id="ondas" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"
+    fill="none" stroke="#F3E7C4" stroke-width="2" stroke-linecap="round"/></svg>
+  <span id="rotulo-som">Música</span>
+</button>
 
 <div class="quadro" id="quadro">
 
@@ -443,6 +456,26 @@
   }
   document.getElementById("entrar").addEventListener("click", carregaLista);
   document.getElementById("senha").addEventListener("keydown", function(e){ if(e.key === "Enter") carregaLista(); });
+
+  // ---- música (só toca no toque do convidado) ----
+  var som = document.getElementById("som");
+  var botaoSom = document.getElementById("botao-som");
+  var rotulo = document.getElementById("rotulo-som");
+  som.volume = 0.45;
+  botaoSom.addEventListener("click", function(){
+    if(som.paused){
+      som.play().then(function(){
+        rotulo.textContent = "Pausar";
+        botaoSom.setAttribute("aria-pressed","true");
+      }).catch(function(){
+        rotulo.textContent = "Sem som";
+      });
+    } else {
+      som.pause();
+      rotulo.textContent = "Música";
+      botaoSom.setAttribute("aria-pressed","false");
+    }
+  });
 
   try{
     if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches){
