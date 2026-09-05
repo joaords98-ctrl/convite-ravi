@@ -90,6 +90,8 @@
   h2{font-family:Anton,sans-serif;font-size:27px;color:var(--mata);margin:0 0 4px;letter-spacing:.01em}
   .ajuda{margin:0 0 22px;color:#6B5340;font-size:15px}
   label{display:block;font-weight:800;color:var(--mata);margin-bottom:6px}
+  .obrig{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:12px;
+    font-weight:800;letter-spacing:.03em;color:#8A3C12;background:rgba(224,169,60,.35);vertical-align:1px}
   .dica{display:block;font-weight:400;color:#6B5340;font-size:14px;margin-top:2px}
   input[type=text],input[type=tel],textarea{width:100%;font:inherit;padding:12px 14px;background:#fff;border:2px solid var(--linha);border-radius:10px;color:var(--casca)}
   textarea{min-height:82px;resize:vertical}
@@ -202,12 +204,12 @@
       <p class="ajuda">Responda até 5 de outubro para a gente acertar bolo, lanche e pulseiras do parque.</p>
 
       <div class="campo">
-        <label for="nome">Quem está confirmando</label>
+        <label for="nome">Quem está confirmando <span class="obrig">obrigatório</span></label>
         <input id="nome" type="text" autocomplete="name" placeholder="Nome e sobrenome">
       </div>
 
       <div class="campo">
-        <label for="fone">WhatsApp<span class="dica">Para avisar qualquer mudança de horário.</span></label>
+        <label for="fone">WhatsApp <span class="obrig">obrigatório</span><span class="dica">Com DDD. É por onde avisamos qualquer mudança de horário.</span></label>
         <input id="fone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(41) 90000-0000">
       </div>
 
@@ -370,11 +372,25 @@
 
   async function envia(vai){
     var nome = document.getElementById("nome").value.trim();
+    var fone = document.getElementById("fone").value.trim();
+    var digitos = fone.replace(/\D/g, "");
     var erro = document.getElementById("erro");
-    if(nome.length < 2){
-      erro.textContent = "Escreva seu nome para a gente saber quem respondeu.";
+
+    function recusa(msg, campo){
+      erro.textContent = msg;
       erro.hidden = false;
-      document.getElementById("nome").focus();
+      document.getElementById(campo).focus();
+    }
+    if(nome.length < 2){
+      recusa("Escreva seu nome para a gente saber quem respondeu.", "nome");
+      return;
+    }
+    if(digitos.length < 10){
+      recusa("Coloque seu WhatsApp com DDD, s\u00e3o 11 n\u00fameros.", "fone");
+      return;
+    }
+    if(digitos.length > 13){
+      recusa("Esse n\u00famero tem d\u00edgitos demais, confira por favor.", "fone");
       return;
     }
     erro.hidden = true;
@@ -384,7 +400,7 @@
 
     var reg = {
       nome: nome,
-      fone: document.getElementById("fone").value.trim() || null,
+      fone: fone,
       recado: document.getElementById("recado").value.trim() || null,
       adultos: vai ? contagem.adultos : 0,
       criancas: vai ? contagem.criancas : 0,
